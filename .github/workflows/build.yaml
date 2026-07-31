@@ -1,0 +1,54 @@
+name: Build Kyxgo OS ISO
+
+on:
+  push:
+    branches:
+      - master
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-iso:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Install Live-Build Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y live-build debootstrap cpio xorriso isolinux syslinux-utils
+
+      - name: Clean Previous Builds
+        run: |
+          sudo lb clean --purge || true
+
+      - name: Configure Live-Build
+        run: |
+          # Uses the auto/config script from your repo
+          sudo lb config
+
+      - name: Build ISO Image
+        run: |
+          # Triggers auto/build to generate live-image-amd64.hybrid.iso
+          sudo lb build
+
+      - name: Rename ISO to Kyxgo Branding
+        run: |
+          # Finds any generated ISO and renames it cleanly
+          ISO_FILE=$(ls *.iso *.hybrid.iso 2>/dev/null | head -n 1)
+          if [ -f "$ISO_FILE" ]; then
+            mv "$ISO_FILE" kyxgo-os-live-amd64.iso
+            echo "ISO renamed successfully to kyxgo-os-live-amd64.iso"
+          else
+            echo "Error: ISO build failed or file not found!" && exit 1
+          fi
+
+      - name: Upload ISO Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Kyxgo-OS-ISO
+          path: kyxgo-os-live-amd64.iso
+          retention-days: 7
+          
