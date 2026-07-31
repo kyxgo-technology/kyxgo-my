@@ -9,6 +9,7 @@ lb config noauto \
     --archive-areas "main contrib non-free non-free-firmware" \
     --backports false \
     --security false \
+    --updates false \
     --source false \
     --binary-filesystem ext4 \
     --binary-images iso-hybrid \
@@ -21,6 +22,7 @@ lb config noauto \
     --initramfs live-boot \
     --iso-publisher "kyxgo-live-config" \
     --iso-volume "kyxgo-live-config-5.0.0" \
+    --keyring-packages "debian-archive-keyring" \
     --linux-packages "linux-image-amd64" \
     --bootappend-live "boot=live config splash" \
     --mirror-bootstrap "http://deb.debian.org/debian/" \
