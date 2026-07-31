@@ -15,7 +15,7 @@ lb config noauto \
     --checksums sha256 \
     --clean \
     --debconf-frontend noninteractive \
-    --distribution trixie \
+    --distribution bookworm \
     --firmware-binary true \
     --firmware-chroot true \
     --initramfs live-boot \
