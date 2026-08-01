@@ -50,9 +50,11 @@ jobs:
             sudo sed -i 's/firmware-ipw2x00//g' config/package-lists/* || true
             sudo sed -i 's/firmware-ivtv//g' config/package-lists/* || true
             sudo sed -i 's/b43-fwcutter//g' config/package-lists/* || true
+            sudo sed -i 's/live-config-upstart//g' config/package-lists/* || true
+            sudo sed -i 's/live-config-sysvinit//g' config/package-lists/* || true
           fi
 
-          # 3. Inject Core Kernel & Live Configs
+          # 3. Inject Core Kernel & Systemd Live Configs
           mkdir -p config/package-lists
           echo "linux-image-amd64 live-boot live-config live-config-systemd" > config/package-lists/kernel.list.chroot
 
