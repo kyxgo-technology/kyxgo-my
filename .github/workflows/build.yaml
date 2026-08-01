@@ -26,12 +26,10 @@ jobs:
           sudo rm -rf config/archives/*
           sudo rm -rf .build config/bootstrap config/chroot config/common config/binary
 
-      - name: Remove Invalid Keyrings
+      - name: Inject Linux Kernel to Package List
         run: |
-          # Purge ubuntu-keyring from package lists if it exists
-          if [ -d "config/package-lists" ]; then
-            sudo sed -i 's/ubuntu-keyring//g' config/package-lists/* 2>/dev/null || true
-          fi
+          mkdir -p config/package-lists
+          echo "linux-image-amd64 live-boot live-config live-config-systemd" > config/package-lists/kernel.list.chroot
 
       - name: Configure Live-Build
         run: |
@@ -57,4 +55,3 @@ jobs:
           name: Kyxgo-OS-ISO
           path: kyxgo-os-live-amd64.iso
           retention-days: 7
-          
