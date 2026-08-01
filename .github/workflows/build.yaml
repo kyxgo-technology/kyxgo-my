@@ -18,7 +18,7 @@ jobs:
       - name: Install Live-Build Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y live-build debootstrap cpio xorriso isolinux syslinux-utils ca-certificates debian-archive-keyring debconf-utils grub-pc-bin grub-efi-amd64-bin mtools
+          sudo apt-get install -y live-build debootstrap cpio xorriso isolinux syslinux-utils ca-certificates debian-archive-keyring debconf-utils syslinux-common
 
       - name: Clean Conflicting Archives & Cache
         run: |
@@ -28,7 +28,7 @@ jobs:
 
       - name: Master Fix - Pre-seed Debconf & Clean Package Lists
         run: |
-          # 1. Pre-accept all non-free firmware & package license prompts
+          # Pre-accept non-free licenses
           echo "firmware-ipw2x00 firmware-ipw2x00/license/accepted boolean true" | sudo debconf-set-selections || true
           echo "firmware-ivtv firmware-ivtv/license/accepted boolean true" | sudo debconf-set-selections || true
           echo "b43-fwcutter b43-fwcutter/install-fetch boolean false" | sudo debconf-set-selections || true
@@ -36,7 +36,7 @@ jobs:
           echo "macchanger macchanger/automatically_run boolean false" | sudo debconf-set-selections || true
           echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula boolean true" | sudo debconf-set-selections || true
 
-          # 2. Fix known obsolete, renamed, or prompt-triggering package entries
+          # Clean bad package names
           if [ -d "config/package-lists" ]; then
             sudo sed -i 's/#.*//g' config/package-lists/* || true
             sudo sed -i 's/keepassxc-full/keepassxc/g' config/package-lists/* || true
@@ -56,14 +56,13 @@ jobs:
             sudo sed -i 's/gfxboot-theme-.*//g' config/package-lists/* || true
           fi
 
-          # 3. Inject Core Kernel & Systemd Live Configs
           mkdir -p config/package-lists
           echo "linux-image-amd64 live-boot live-config live-config-systemd" > config/package-lists/kernel.list.chroot
 
       - name: Configure Live-Build
         run: |
           sudo lb config
-          # Clean auto-generated theme conflicts
+          # Strip any theme references created by auto-config
           sudo find config/ -type f -exec sed -i 's/live-config-upstart//g' {} + || true
           sudo find config/ -type f -exec sed -i 's/live-config-sysvinit//g' {} + || true
           sudo find config/ -type f -exec sed -i 's/syslinux-themes-.*//g' {} + || true
