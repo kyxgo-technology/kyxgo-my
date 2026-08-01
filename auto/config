@@ -19,6 +19,7 @@ lb config noauto \
     --firmware-binary true \
     --firmware-chroot true \
     --initramfs live-boot \
+    --initsystem systemd \
     --iso-publisher "kyxgo-live-config" \
     --iso-volume "kyxgo-live-config-5.0.0" \
     --keyring-packages "debian-archive-keyring" \
