@@ -10,7 +10,6 @@ lb config noauto \
     --backports false \
     --security false \
     --source false \
-    --binary-filesystem ext4 \
     --binary-images iso-hybrid \
     --checksums sha256 \
     --clean \
@@ -20,7 +19,7 @@ lb config noauto \
     --firmware-chroot true \
     --initramfs live-boot \
     --initsystem systemd \
-    --syslinux-theme debian-bookworm \
+    --bootloader grub2 \
     --iso-publisher "kyxgo-live-config" \
     --iso-volume "kyxgo-live-config-5.0.0" \
     --keyring-packages "debian-archive-keyring" \
