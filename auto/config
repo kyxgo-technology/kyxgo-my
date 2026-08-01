@@ -19,7 +19,8 @@ lb config noauto \
     --firmware-chroot true \
     --initramfs live-boot \
     --initsystem systemd \
-    --bootloader grub2 \
+    --bootloader syslinux \
+    --syslinux-theme none \
     --iso-publisher "kyxgo-live-config" \
     --iso-volume "kyxgo-live-config-5.0.0" \
     --keyring-packages "debian-archive-keyring" \
