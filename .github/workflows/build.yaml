@@ -20,13 +20,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y live-build debootstrap cpio xorriso isolinux syslinux-utils ca-certificates debian-archive-keyring
 
-      - name: Clean Conflicting Archives & Keyrings
+      - name: Clean Conflicting Archives & Cache
         run: |
           sudo lb clean --purge || true
           sudo rm -rf config/archives/*
           sudo rm -rf .build config/bootstrap config/chroot config/common config/binary
-          # Remove ubuntu-keyring reference from any package list inside repo
-          grep -rl "ubuntu-keyring" config/ | xargs -r sudo sed -i 's/ubuntu-keyring//g'
+
+      - name: Remove Invalid Keyrings
+        run: |
+          # Purge ubuntu-keyring from package lists if it exists
+          if [ -d "config/package-lists" ]; then
+            sudo sed -i 's/ubuntu-keyring//g' config/package-lists/* 2>/dev/null || true
+          fi
 
       - name: Configure Live-Build
         run: |
@@ -52,3 +57,4 @@ jobs:
           name: Kyxgo-OS-ISO
           path: kyxgo-os-live-amd64.iso
           retention-days: 7
+          
