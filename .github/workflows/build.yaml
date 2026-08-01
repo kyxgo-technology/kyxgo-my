@@ -20,11 +20,13 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y live-build debootstrap cpio xorriso isolinux syslinux-utils ca-certificates debian-archive-keyring
 
-      - name: Clean Conflicting Archives & Cache
+      - name: Clean Conflicting Archives & Keyrings
         run: |
           sudo lb clean --purge || true
           sudo rm -rf config/archives/*
           sudo rm -rf .build config/bootstrap config/chroot config/common config/binary
+          # Remove ubuntu-keyring reference from any package list inside repo
+          grep -rl "ubuntu-keyring" config/ | xargs -r sudo sed -i 's/ubuntu-keyring//g'
 
       - name: Configure Live-Build
         run: |
