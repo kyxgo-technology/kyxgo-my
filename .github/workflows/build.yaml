@@ -26,9 +26,9 @@ jobs:
           sudo rm -rf config/archives/*
           sudo rm -rf .build config/bootstrap config/chroot config/common config/binary
 
-      - name: Fix Invalid Custom Packages & Inject Kernel
+      - name: Fix Invalid Custom Packages & Broken Dependencies
         run: |
-          # Clean invalid comments and wrong package names in package lists
+          # Clean invalid comments, missing packages and broken dependency packages
           if [ -d "config/package-lists" ]; then
             sudo sed -i 's/#.*//g' config/package-lists/* || true
             sudo sed -i 's/keepassxc-full/keepassxc/g' config/package-lists/* || true
@@ -37,6 +37,8 @@ jobs:
             sudo sed -i 's/gnome-software-plugin-fwupd//g' config/package-lists/* || true
             sudo sed -i 's/libblockdev-crypto3//g' config/package-lists/* || true
             sudo sed -i 's/pinta//g' config/package-lists/* || true
+            sudo sed -i 's/libguestfs-rescue//g' config/package-lists/* || true
+            sudo sed -i 's/libguestfs-tools//g' config/package-lists/* || true
           fi
           
           # Inject core kernel packages
@@ -67,3 +69,4 @@ jobs:
           name: Kyxgo-OS-ISO
           path: kyxgo-os-live-amd64.iso
           retention-days: 7
+          
