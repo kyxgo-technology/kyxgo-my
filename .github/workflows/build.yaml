@@ -18,7 +18,7 @@ jobs:
       - name: Install Live-Build Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y live-build debootstrap cpio xorriso isolinux syslinux-utils ca-certificates debian-archive-keyring
+          sudo apt-get install -y live-build debootstrap cpio xorriso isolinux syslinux-utils ca-certificates debian-archive-keyring debconf-utils
 
       - name: Clean Conflicting Archives & Cache
         run: |
@@ -26,9 +26,17 @@ jobs:
           sudo rm -rf config/archives/*
           sudo rm -rf .build config/bootstrap config/chroot config/common config/binary
 
-      - name: Fix Invalid Custom Packages & Broken Dependencies
+      - name: Master Fix - Pre-seed Debconf & Clean Package Lists
         run: |
-          # Clean invalid comments, missing packages and broken dependency packages
+          # 1. Pre-accept all non-free firmware & package license prompts
+          echo "firmware-ipw2x00 firmware-ipw2x00/license/accepted boolean true" | sudo debconf-set-selections || true
+          echo "firmware-ivtv firmware-ivtv/license/accepted boolean true" | sudo debconf-set-selections || true
+          echo "b43-fwcutter b43-fwcutter/install-fetch boolean false" | sudo debconf-set-selections || true
+          echo "wireshark-common wireshark-common/install-setuid boolean false" | sudo debconf-set-selections || true
+          echo "macchanger macchanger/automatically_run boolean false" | sudo debconf-set-selections || true
+          echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula boolean true" | sudo debconf-set-selections || true
+
+          # 2. Fix known obsolete, renamed, or prompt-triggering package entries
           if [ -d "config/package-lists" ]; then
             sudo sed -i 's/#.*//g' config/package-lists/* || true
             sudo sed -i 's/keepassxc-full/keepassxc/g' config/package-lists/* || true
@@ -39,9 +47,12 @@ jobs:
             sudo sed -i 's/pinta//g' config/package-lists/* || true
             sudo sed -i 's/libguestfs-rescue//g' config/package-lists/* || true
             sudo sed -i 's/libguestfs-tools//g' config/package-lists/* || true
+            sudo sed -i 's/firmware-ipw2x00//g' config/package-lists/* || true
+            sudo sed -i 's/firmware-ivtv//g' config/package-lists/* || true
+            sudo sed -i 's/b43-fwcutter//g' config/package-lists/* || true
           fi
-          
-          # Inject core kernel packages
+
+          # 3. Inject Core Kernel & Live Configs
           mkdir -p config/package-lists
           echo "linux-image-amd64 live-boot live-config live-config-systemd" > config/package-lists/kernel.list.chroot
 
@@ -69,4 +80,3 @@ jobs:
           name: Kyxgo-OS-ISO
           path: kyxgo-os-live-amd64.iso
           retention-days: 7
-          
