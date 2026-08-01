@@ -26,8 +26,20 @@ jobs:
           sudo rm -rf config/archives/*
           sudo rm -rf .build config/bootstrap config/chroot config/common config/binary
 
-      - name: Inject Linux Kernel to Package List
+      - name: Fix Invalid Custom Packages & Inject Kernel
         run: |
+          # Clean invalid comments and wrong package names in package lists
+          if [ -d "config/package-lists" ]; then
+            sudo sed -i 's/#.*//g' config/package-lists/* || true
+            sudo sed -i 's/keepassxc-full/keepassxc/g' config/package-lists/* || true
+            sudo sed -i 's/network-manager-applet/network-manager-gnome/g' config/package-lists/* || true
+            sudo sed -i 's/gnome-software-plugin-deb//g' config/package-lists/* || true
+            sudo sed -i 's/gnome-software-plugin-fwupd//g' config/package-lists/* || true
+            sudo sed -i 's/libblockdev-crypto3//g' config/package-lists/* || true
+            sudo sed -i 's/pinta//g' config/package-lists/* || true
+          fi
+          
+          # Inject core kernel packages
           mkdir -p config/package-lists
           echo "linux-image-amd64 live-boot live-config live-config-systemd" > config/package-lists/kernel.list.chroot
 
