@@ -9,7 +9,6 @@ lb config noauto \
     --archive-areas "main contrib non-free non-free-firmware" \
     --backports false \
     --security false \
-    --updates false \
     --source false \
     --binary-filesystem ext4 \
     --binary-images iso-hybrid \
