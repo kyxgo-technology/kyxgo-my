@@ -6,10 +6,9 @@ lb config noauto \
 --apt-recommends false \
 --apt-indices false \
 --architectures amd64 \
---archive-areas 'main contrib non-free non-free-firmware' \
+--archive-areas "main contrib non-free non-free-firmware" \
 --backports true \
 --security true \
---updates true \
 --source false \
 --binary-filesystem ext4 \
 --binary-images iso-hybrid \
@@ -19,15 +18,19 @@ lb config noauto \
 --debian-installer live \
 --debian-installer-distribution bookworm \
 --debian-installer-gui true \
---debootstrap-options "--include=apt-transport-https,ca-certificates,openssl" \
+--debootstrap debootstrap \
 --distribution bookworm \
 --firmware-binary true \
 --firmware-chroot true \
 --initramfs live-boot \
---iso-publisher kyxgo-live-config \
---iso-volume kyxgo-live-config-5.0.0 \
---linux-packages "linux-image linux-headers" \
+--initsystem systemd \
+--iso-publisher "kyxgo-live-config" \
+--iso-volume "kyxgo-live-config-5.0.0" \
+--linux-packages "linux-image-amd64" \
 --bootappend-live "boot=live config splash" \
+--mirror-bootstrap "http://deb.debian.org/debian/" \
+--mirror-chroot "http://deb.debian.org/debian/" \
+--mirror-binary "http://deb.debian.org/debian/" \
 --memtest memtest86+
 
 "${@}"
