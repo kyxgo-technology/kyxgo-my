@@ -18,7 +18,7 @@ jobs:
       - name: Install Live-Build Dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y live-build debootstrap cpio xorriso isolinux syslinux-utils ca-certificates debian-archive-keyring debconf-utils syslinux-common
+          sudo apt-get install -y live-build debootstrap cpio xorriso isolinux syslinux-utils ca-certificates debian-archive-keyring debconf-utils memtest86+
 
       - name: Clean Conflicting Archives & Cache
         run: |
@@ -26,9 +26,9 @@ jobs:
           sudo rm -rf config/archives/*
           sudo rm -rf .build config/bootstrap config/chroot config/common config/binary
 
-      - name: Master Fix - Pre-seed Debconf & Clean Package Lists
+      - name: Pre-seed License Prompts & Non-Interactive Debconf
         run: |
-          # Pre-accept non-free licenses
+          # Auto-accept any package EULAs or prompt boxes
           echo "firmware-ipw2x00 firmware-ipw2x00/license/accepted boolean true" | sudo debconf-set-selections || true
           echo "firmware-ivtv firmware-ivtv/license/accepted boolean true" | sudo debconf-set-selections || true
           echo "b43-fwcutter b43-fwcutter/install-fetch boolean false" | sudo debconf-set-selections || true
@@ -36,37 +36,9 @@ jobs:
           echo "macchanger macchanger/automatically_run boolean false" | sudo debconf-set-selections || true
           echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula boolean true" | sudo debconf-set-selections || true
 
-          # Clean bad package names
-          if [ -d "config/package-lists" ]; then
-            sudo sed -i 's/#.*//g' config/package-lists/* || true
-            sudo sed -i 's/keepassxc-full/keepassxc/g' config/package-lists/* || true
-            sudo sed -i 's/network-manager-applet/network-manager-gnome/g' config/package-lists/* || true
-            sudo sed -i 's/gnome-software-plugin-deb//g' config/package-lists/* || true
-            sudo sed -i 's/gnome-software-plugin-fwupd//g' config/package-lists/* || true
-            sudo sed -i 's/libblockdev-crypto3//g' config/package-lists/* || true
-            sudo sed -i 's/pinta//g' config/package-lists/* || true
-            sudo sed -i 's/libguestfs-rescue//g' config/package-lists/* || true
-            sudo sed -i 's/libguestfs-tools//g' config/package-lists/* || true
-            sudo sed -i 's/firmware-ipw2x00//g' config/package-lists/* || true
-            sudo sed -i 's/firmware-ivtv//g' config/package-lists/* || true
-            sudo sed -i 's/b43-fwcutter//g' config/package-lists/* || true
-            sudo sed -i 's/live-config-upstart//g' config/package-lists/* || true
-            sudo sed -i 's/live-config-sysvinit//g' config/package-lists/* || true
-            sudo sed -i 's/syslinux-themes-.*//g' config/package-lists/* || true
-            sudo sed -i 's/gfxboot-theme-.*//g' config/package-lists/* || true
-          fi
-
-          mkdir -p config/package-lists
-          echo "linux-image-amd64 live-boot live-config live-config-systemd" > config/package-lists/kernel.list.chroot
-
       - name: Configure Live-Build
         run: |
           sudo lb config
-          # Strip any theme references created by auto-config
-          sudo find config/ -type f -exec sed -i 's/live-config-upstart//g' {} + || true
-          sudo find config/ -type f -exec sed -i 's/live-config-sysvinit//g' {} + || true
-          sudo find config/ -type f -exec sed -i 's/syslinux-themes-.*//g' {} + || true
-          sudo find config/ -type f -exec sed -i 's/gfxboot-theme-.*//g' {} + || true
 
       - name: Build ISO Image
         run: |
