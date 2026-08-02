@@ -20,17 +20,16 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y live-build debootstrap cpio xorriso isolinux syslinux-utils ca-certificates debian-archive-keyring debconf-utils memtest86+
 
-      - name: Hard Purge All Cached Directories
+      - name: Hard Purge Stale Caches & Archives
         run: |
-          # 1. Force purge live-build cache & stale configs
+          # Clean live-build cache & conflicting archive sources
           sudo lb clean --purge || true
-          sudo rm -rf .build/ cache/ config/bootstrap config/chroot config/common config/binary config/archives/*
-          
-          # 2. Delete auto generated bootstrap/cache files if present
-          sudo rm -f config/bootstrap config/binary config/chroot || true
+          sudo rm -rf .build/ cache/ config/bootstrap config/chroot config/common config/binary
+          sudo rm -rf config/archives/* config/chroot_apt/*
 
-      - name: Pre-seed Debconf & Licenses
+      - name: Master Pre-seed (Auto-Accept All Prompts)
         run: |
+          export DEBIAN_FRONTEND=noninteractive
           echo "firmware-ipw2x00 firmware-ipw2x00/license/accepted boolean true" | sudo debconf-set-selections || true
           echo "firmware-ivtv firmware-ivtv/license/accepted boolean true" | sudo debconf-set-selections || true
           echo "b43-fwcutter b43-fwcutter/install-fetch boolean false" | sudo debconf-set-selections || true
@@ -38,7 +37,7 @@ jobs:
           echo "macchanger macchanger/automatically_run boolean false" | sudo debconf-set-selections || true
           echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula boolean true" | sudo debconf-set-selections || true
 
-      - name: Force Configure Live-Build (Fresh Debian Bookworm Base)
+      - name: Force Configure Live-Build (Debian Pure Repositories)
         run: |
           sudo lb config \
             --apt-recommends false \
@@ -51,6 +50,7 @@ jobs:
             --clean \
             --debconf-frontend noninteractive \
             --distribution bookworm \
+            --security true \
             --firmware-binary true \
             --firmware-chroot true \
             --initramfs live-boot \
@@ -61,10 +61,23 @@ jobs:
             --bootappend-live "boot=live config splash" \
             --mirror-bootstrap "http://deb.debian.org/debian/" \
             --mirror-chroot "http://deb.debian.org/debian/" \
-            --mirror-binary "http://deb.debian.org/debian/"
+            --mirror-binary "http://deb.debian.org/debian/" \
+            --mirror-chroot-security "http://deb.debian.org/debian-security" \
+            --mirror-binary-security "http://deb.debian.org/debian-security"
 
-      - name: Smart Package Cleaner
+      - name: Pre-Build Deep Sanitize Engine
         run: |
+          # 1. Neutralize any hardcoded Ubuntu mirrors in configs
+          sudo find config/ -type f -exec sed -i 's/security.ubuntu.com\/ubuntu/deb.debian.org\/debian-security/g' {} + || true
+          sudo find config/ -type f -exec sed -i 's/archive.ubuntu.com\/ubuntu/deb.debian.org\/debian/g' {} + || true
+
+          # 2. Neutralize conflicting init-systems and bootloader theme entries
+          sudo find config/ -type f -exec sed -i 's/live-config-upstart//g' {} + || true
+          sudo find config/ -type f -exec sed -i 's/live-config-sysvinit//g' {} + || true
+          sudo find config/ -type f -exec sed -i 's/syslinux-themes-.*//g' {} + || true
+          sudo find config/ -type f -exec sed -i 's/gfxboot-theme-.*//g' {} + || true
+
+          # 3. Clean custom package lists inside repo
           if [ -d "config/package-lists" ]; then
             sudo sed -i 's/#.*//g' config/package-lists/* || true
             sudo sed -i 's/keepassxc-full/keepassxc/g' config/package-lists/* || true
@@ -78,10 +91,6 @@ jobs:
             sudo sed -i 's/firmware-ipw2x00//g' config/package-lists/* || true
             sudo sed -i 's/firmware-ivtv//g' config/package-lists/* || true
             sudo sed -i 's/b43-fwcutter//g' config/package-lists/* || true
-            sudo sed -i 's/live-config-upstart//g' config/package-lists/* || true
-            sudo sed -i 's/live-config-sysvinit//g' config/package-lists/* || true
-            sudo sed -i 's/syslinux-themes-.*//g' config/package-lists/* || true
-            sudo sed -i 's/gfxboot-theme-.*//g' config/package-lists/* || true
           fi
 
           mkdir -p config/package-lists
