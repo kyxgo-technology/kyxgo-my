@@ -1,55 +1,48 @@
 menu hshift 0
 menu width 82
 
-menu title KYXGO-live-config 5.0.0 - Boot menu
+menu title KYXGO OS Live Boot Menu
 include stdmenu.cfg
 
 label live-@FLAVOUR@-english
-        menu label ^Live (@FLAVOUR@) (English)
+        menu label ^Live (Kyxgo OS English)
         menu default
         linux @LINUX@
         initrd @INITRD@
-        append @APPEND_LIVE@ locales=en_US.UTF-8
-
-label live-@FLAVOUR@-english
-        menu label ^Live (@FLAVOUR@) (ENGLISH)
-        menu default
-        linux @LINUX@
-        initrd @INITRD@
-        append @APPEND_LIVE@ locales=us_US.UTF-8
+        append @APPEND_LIVE@ locales=en_US.UTF-8 keyboard-layouts=us
 
 label installgui
-    menu label ^Install
-	linux /install/gtk/vmlinuz
-	initrd /install/gtk/initrd.gz
-	append video=vesa:ywrap,mtrr vga=788 @APPEND_INSTALL@ --- quiet
+        menu label ^Install Kyxgo OS (Graphical)
+        linux /install/gtk/vmlinuz
+        initrd /install/gtk/initrd.gz
+        append video=vesa:ywrap,mtrr vga=788 @APPEND_INSTALL@ --- quiet
 
 menu begin advanced
-	menu title Advanced options
-	include stdmenu.cfg
+        menu title Advanced Options
+        include stdmenu.cfg
 
-	label live-@FLAVOUR@-failsafe
-		menu label ^Live (@FLAVOUR@ failsafe)
-		linux @LINUX@
-		initrd @INITRD@
-		append @APPEND_LIVE_FAILSAFE@
+        label live-@FLAVOUR@-failsafe
+                menu label ^Live (Failsafe Mode)
+                linux @LINUX@
+                initrd @INITRD@
+                append @APPEND_LIVE_FAILSAFE@
 
-	label install
-		menu label ^Install (text mode)
-		linux /install/vmlinuz
-		initrd /install/initrd.gz
-		append vga=788 @APPEND_INSTALL@ --- quiet
+        label install
+                menu label ^Install (Text Mode)
+                linux /install/vmlinuz
+                initrd /install/initrd.gz
+                append vga=788 @APPEND_INSTALL@ --- quiet
 
-	label hdt
-		menu label ^Hardware Detection Tool (HDT)
-		com32 hdt.c32
+        label hdt
+                menu label ^Hardware Detection Tool (HDT)
+                com32 hdt.c32
 
-	label memtest
-		menu label ^Memory Diagnostic Tool (memtest86+)
-		linux /live/memtest
+        label memtest
+                menu label ^Memory Diagnostic Tool (memtest86+)
+                linux /live/memtest
 
-	label mainmenu
-		menu label ^Back..
-		menu exit
+        label mainmenu
+                menu label ^Back..
+                menu exit
 
 menu end
