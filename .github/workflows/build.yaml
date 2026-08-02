@@ -24,7 +24,7 @@ jobs:
         run: |
           sudo lb clean --purge || true
           sudo rm -rf config/archives/*
-          sudo rm -rf .build config/bootstrap config/chroot config/common config/binary
+          sudo rm -rf .build config/bootstrap config/chroot config/common config/binary cache/
 
       - name: Pre-seed License Prompts & Non-Interactive Debconf
         run: |
