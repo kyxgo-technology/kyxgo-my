@@ -57,6 +57,7 @@ jobs:
             --initsystem systemd \
             --iso-publisher "kyxgo-live-config" \
             --iso-volume "kyxgo-live-config-5.0.0" \
+            --keyring-packages "debian-archive-keyring" \
             --linux-packages "linux-image-amd64" \
             --bootappend-live "boot=live config splash" \
             --mirror-bootstrap "http://deb.debian.org/debian/" \
@@ -67,9 +68,10 @@ jobs:
 
       - name: Pre-Build Deep Sanitize Engine
         run: |
-          # 1. Neutralize any hardcoded Ubuntu mirrors in configs
+          # 1. Neutralize any hardcoded Ubuntu mirrors/keyrings in configs
           sudo find config/ -type f -exec sed -i 's/security.ubuntu.com\/ubuntu/deb.debian.org\/debian-security/g' {} + || true
           sudo find config/ -type f -exec sed -i 's/archive.ubuntu.com\/ubuntu/deb.debian.org\/debian/g' {} + || true
+          sudo find config/ -type f -exec sed -i 's/ubuntu-keyring//g' {} + || true
 
           # 2. Neutralize conflicting init-systems and bootloader theme entries
           sudo find config/ -type f -exec sed -i 's/live-config-upstart//g' {} + || true
@@ -80,6 +82,7 @@ jobs:
           # 3. Clean custom package lists inside repo
           if [ -d "config/package-lists" ]; then
             sudo sed -i 's/#.*//g' config/package-lists/* || true
+            sudo sed -i 's/ubuntu-keyring//g' config/package-lists/* || true
             sudo sed -i 's/keepassxc-full/keepassxc/g' config/package-lists/* || true
             sudo sed -i 's/network-manager-applet/network-manager-gnome/g' config/package-lists/* || true
             sudo sed -i 's/gnome-software-plugin-deb//g' config/package-lists/* || true
@@ -94,7 +97,7 @@ jobs:
           fi
 
           mkdir -p config/package-lists
-          echo "linux-image-amd64 live-boot live-config live-config-systemd" > config/package-lists/kernel.list.chroot
+          echo "linux-image-amd64 live-boot live-config live-config-systemd debian-archive-keyring" > config/package-lists/kernel.list.chroot
 
       - name: Build ISO Image
         run: |
