@@ -20,9 +20,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y live-build debootstrap cpio xorriso isolinux syslinux-utils ca-certificates debian-archive-keyring debconf-utils memtest86+
 
-      - name: Hard Purge Stale Caches & Archives
+      - name: Hard Purge Stale Caches
         run: |
-          # Clean live-build cache & conflicting archive sources
           sudo lb clean --purge || true
           sudo rm -rf .build/ cache/ config/bootstrap config/chroot config/common config/binary
           sudo rm -rf config/archives/* config/chroot_apt/*
@@ -37,7 +36,7 @@ jobs:
           echo "macchanger macchanger/automatically_run boolean false" | sudo debconf-set-selections || true
           echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula boolean true" | sudo debconf-set-selections || true
 
-      - name: Force Configure Live-Build (Debian Pure Repositories)
+      - name: Force Configure Live-Build
         run: |
           sudo lb config \
             --apt-recommends false \
@@ -60,26 +59,23 @@ jobs:
             --keyring-packages "debian-archive-keyring" \
             --linux-packages "linux-image-amd64" \
             --bootappend-live "boot=live config splash" \
-            --mirror-bootstrap "http://deb.debian.org/debian/" \
-            --mirror-chroot "http://deb.debian.org/debian/" \
-            --mirror-binary "http://deb.debian.org/debian/" \
+            --mirror-bootstrap "http://deb.debian.org/debian" \
+            --mirror-chroot "http://deb.debian.org/debian" \
+            --mirror-binary "http://deb.debian.org/debian" \
             --mirror-chroot-security "http://deb.debian.org/debian-security" \
             --mirror-binary-security "http://deb.debian.org/debian-security"
 
       - name: Pre-Build Deep Sanitize Engine
         run: |
-          # 1. Neutralize any hardcoded Ubuntu mirrors/keyrings in configs
+          # 1. Clean extra trailing slashes from generated config
+          sudo find config/ -type f -exec sed -i 's/debian\/\//debian\//g' {} + || true
+
+          # 2. Neutralize any hardcoded Ubuntu references
           sudo find config/ -type f -exec sed -i 's/security.ubuntu.com\/ubuntu/deb.debian.org\/debian-security/g' {} + || true
           sudo find config/ -type f -exec sed -i 's/archive.ubuntu.com\/ubuntu/deb.debian.org\/debian/g' {} + || true
           sudo find config/ -type f -exec sed -i 's/ubuntu-keyring//g' {} + || true
 
-          # 2. Neutralize conflicting init-systems and bootloader theme entries
-          sudo find config/ -type f -exec sed -i 's/live-config-upstart//g' {} + || true
-          sudo find config/ -type f -exec sed -i 's/live-config-sysvinit//g' {} + || true
-          sudo find config/ -type f -exec sed -i 's/syslinux-themes-.*//g' {} + || true
-          sudo find config/ -type f -exec sed -i 's/gfxboot-theme-.*//g' {} + || true
-
-          # 3. Clean custom package lists inside repo
+          # 3. Clean custom package lists
           if [ -d "config/package-lists" ]; then
             sudo sed -i 's/#.*//g' config/package-lists/* || true
             sudo sed -i 's/ubuntu-keyring//g' config/package-lists/* || true
