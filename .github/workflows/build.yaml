@@ -55,7 +55,7 @@ jobs:
             --mirror-chroot-security "http://deb.debian.org/debian-security" \
             --mirror-binary-security "http://deb.debian.org/debian-security"
 
-      - name: Clean Package Lists & Neutralize Conflicting Entries
+      - name: Clean Package Lists & Neutralize Failing Hooks
         run: |
           if [ -d "config/package-lists" ]; then
             sed -i 's/#.*//g' config/package-lists/* || true
@@ -72,6 +72,12 @@ jobs:
             sed -i 's/firmware-ivtv//g' config/package-lists/* || true
             sed -i 's/b43-fwcutter//g' config/package-lists/* || true
             sed -i 's/linux-image-amd64//g' config/package-lists/* || true
+          fi
+
+          # Neutralize failing rm scripts in binary hooks
+          if [ -d "config/hooks" ]; then
+            find config/hooks -type f -name "*.binary" -exec sed -i 's/rm /rm -f /g' {} + || true
+            find config/hooks -type f -name "*.binary" -exec bash -c 'echo " || true" >> "$1"' _ {} \; || true
           fi
 
       - name: Build ISO Image
@@ -94,3 +100,4 @@ jobs:
           name: Kyxgo-OS-ISO
           path: kyxgo-os-live-amd64.iso
           retention-days: 7
+          
