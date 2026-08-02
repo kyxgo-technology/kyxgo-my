@@ -12,17 +12,18 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: debian:bookworm
+      options: --privileged
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install Build Prerequisites
+      - name: Install All Complete Dependencies
         run: |
           apt-get update
-          apt-get install -y live-build debootstrap cpio xorriso isolinux syslinux-utils ca-certificates debian-archive-keyring debconf-utils memtest86+ git
+          apt-get install -y live-build debootstrap cpio xorriso isolinux syslinux-utils ca-certificates debian-archive-keyring debconf-utils memtest86+ git squashfs-tools grub-pc-bin grub-efi-amd64-bin mtools mtools
 
-      - name: Configure Live-Build inside Pure Debian Container
+      - name: Configure Live-Build inside Debian Privileged Container
         run: |
           lb clean --purge || true
           rm -rf .build/ cache/ config/bootstrap config/chroot config/common config/binary
