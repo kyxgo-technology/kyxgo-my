@@ -11,7 +11,7 @@ jobs:
   build-iso:
     runs-on: ubuntu-latest
     container:
-      image: debian:bookworm
+      image: debian:trixie
       options: --privileged
 
     steps:
@@ -23,7 +23,7 @@ jobs:
           apt-get update
           apt-get install -y live-build debootstrap cpio xorriso isolinux syslinux-utils ca-certificates debian-archive-keyring debconf-utils memtest86+ git squashfs-tools grub-pc-bin grub-efi-amd64-bin mtools
 
-      - name: Configure Live-Build inside Debian Privileged Container
+      - name: Configure Live-Build inside Debian Trixie Container
         run: |
           lb clean --purge || true
           rm -rf .build/ cache/ config/bootstrap config/chroot config/common config/binary
@@ -38,7 +38,7 @@ jobs:
             --checksums sha256 \
             --clean \
             --debconf-frontend noninteractive \
-            --distribution bookworm \
+            --distribution trixie \
             --security true \
             --firmware-binary true \
             --firmware-chroot true \
@@ -94,4 +94,3 @@ jobs:
           name: Kyxgo-OS-ISO
           path: kyxgo-os-live-amd64.iso
           retention-days: 7
-          
