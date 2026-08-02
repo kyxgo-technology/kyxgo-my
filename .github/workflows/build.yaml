@@ -10,35 +10,24 @@ on:
 jobs:
   build-iso:
     runs-on: ubuntu-latest
+    container:
+      image: debian:bookworm
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install Live-Build Dependencies
+      - name: Install Build Prerequisites
         run: |
-          sudo apt-get update
-          sudo apt-get install -y live-build debootstrap cpio xorriso isolinux syslinux-utils ca-certificates debian-archive-keyring debconf-utils memtest86+
+          apt-get update
+          apt-get install -y live-build debootstrap cpio xorriso isolinux syslinux-utils ca-certificates debian-archive-keyring debconf-utils memtest86+ git
 
-      - name: Hard Purge Stale Caches
+      - name: Configure Live-Build inside Pure Debian Container
         run: |
-          sudo lb clean --purge || true
-          sudo rm -rf .build/ cache/ config/bootstrap config/chroot config/common config/binary
-          sudo rm -rf config/archives/* config/chroot_apt/*
+          lb clean --purge || true
+          rm -rf .build/ cache/ config/bootstrap config/chroot config/common config/binary
 
-      - name: Master Pre-seed (Auto-Accept All Prompts)
-        run: |
-          export DEBIAN_FRONTEND=noninteractive
-          echo "firmware-ipw2x00 firmware-ipw2x00/license/accepted boolean true" | sudo debconf-set-selections || true
-          echo "firmware-ivtv firmware-ivtv/license/accepted boolean true" | sudo debconf-set-selections || true
-          echo "b43-fwcutter b43-fwcutter/install-fetch boolean false" | sudo debconf-set-selections || true
-          echo "wireshark-common wireshark-common/install-setuid boolean false" | sudo debconf-set-selections || true
-          echo "macchanger macchanger/automatically_run boolean false" | sudo debconf-set-selections || true
-          echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula boolean true" | sudo debconf-set-selections || true
-
-      - name: Force Configure Live-Build
-        run: |
-          sudo lb config \
+          lb config \
             --apt-recommends false \
             --apt-indices false \
             --architectures amd64 \
@@ -65,31 +54,22 @@ jobs:
             --mirror-chroot-security "http://deb.debian.org/debian-security" \
             --mirror-binary-security "http://deb.debian.org/debian-security"
 
-      - name: Pre-Build Deep Sanitize Engine
+      - name: Clean Package Lists & Neutralize Conflicting Entries
         run: |
-          # 1. Clean extra trailing slashes from generated config
-          sudo find config/ -type f -exec sed -i 's/debian\/\//debian\//g' {} + || true
-
-          # 2. Neutralize any hardcoded Ubuntu references
-          sudo find config/ -type f -exec sed -i 's/security.ubuntu.com\/ubuntu/deb.debian.org\/debian-security/g' {} + || true
-          sudo find config/ -type f -exec sed -i 's/archive.ubuntu.com\/ubuntu/deb.debian.org\/debian/g' {} + || true
-          sudo find config/ -type f -exec sed -i 's/ubuntu-keyring//g' {} + || true
-
-          # 3. Clean custom package lists
           if [ -d "config/package-lists" ]; then
-            sudo sed -i 's/#.*//g' config/package-lists/* || true
-            sudo sed -i 's/ubuntu-keyring//g' config/package-lists/* || true
-            sudo sed -i 's/keepassxc-full/keepassxc/g' config/package-lists/* || true
-            sudo sed -i 's/network-manager-applet/network-manager-gnome/g' config/package-lists/* || true
-            sudo sed -i 's/gnome-software-plugin-deb//g' config/package-lists/* || true
-            sudo sed -i 's/gnome-software-plugin-fwupd//g' config/package-lists/* || true
-            sudo sed -i 's/libblockdev-crypto3//g' config/package-lists/* || true
-            sudo sed -i 's/pinta//g' config/package-lists/* || true
-            sudo sed -i 's/libguestfs-rescue//g' config/package-lists/* || true
-            sudo sed -i 's/libguestfs-tools//g' config/package-lists/* || true
-            sudo sed -i 's/firmware-ipw2x00//g' config/package-lists/* || true
-            sudo sed -i 's/firmware-ivtv//g' config/package-lists/* || true
-            sudo sed -i 's/b43-fwcutter//g' config/package-lists/* || true
+            sed -i 's/#.*//g' config/package-lists/* || true
+            sed -i 's/ubuntu-keyring//g' config/package-lists/* || true
+            sed -i 's/keepassxc-full/keepassxc/g' config/package-lists/* || true
+            sed -i 's/network-manager-applet/network-manager-gnome/g' config/package-lists/* || true
+            sed -i 's/gnome-software-plugin-deb//g' config/package-lists/* || true
+            sed -i 's/gnome-software-plugin-fwupd//g' config/package-lists/* || true
+            sed -i 's/libblockdev-crypto3//g' config/package-lists/* || true
+            sed -i 's/pinta//g' config/package-lists/* || true
+            sed -i 's/libguestfs-rescue//g' config/package-lists/* || true
+            sed -i 's/libguestfs-tools//g' config/package-lists/* || true
+            sed -i 's/firmware-ipw2x00//g' config/package-lists/* || true
+            sed -i 's/firmware-ivtv//g' config/package-lists/* || true
+            sed -i 's/b43-fwcutter//g' config/package-lists/* || true
           fi
 
           mkdir -p config/package-lists
@@ -97,7 +77,7 @@ jobs:
 
       - name: Build ISO Image
         run: |
-          sudo lb build
+          lb build
 
       - name: Rename ISO to Kyxgo Branding
         run: |
