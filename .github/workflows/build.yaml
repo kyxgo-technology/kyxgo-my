@@ -21,7 +21,7 @@ jobs:
       - name: Install All Complete Dependencies
         run: |
           apt-get update
-          apt-get install -y live-build debootstrap cpio xorriso isolinux syslinux-utils ca-certificates debian-archive-keyring debconf-utils memtest86+ git squashfs-tools grub-pc-bin grub-efi-amd64-bin mtools mtools
+          apt-get install -y live-build debootstrap cpio xorriso isolinux syslinux-utils ca-certificates debian-archive-keyring debconf-utils memtest86+ git squashfs-tools grub-pc-bin grub-efi-amd64-bin mtools
 
       - name: Configure Live-Build inside Debian Privileged Container
         run: |
@@ -47,7 +47,7 @@ jobs:
             --iso-publisher "kyxgo-live-config" \
             --iso-volume "kyxgo-live-config-5.0.0" \
             --keyring-packages "debian-archive-keyring" \
-            --linux-packages "linux-image-amd64" \
+            --linux-packages "linux-image" \
             --bootappend-live "boot=live config splash" \
             --mirror-bootstrap "http://deb.debian.org/debian" \
             --mirror-chroot "http://deb.debian.org/debian" \
@@ -71,10 +71,8 @@ jobs:
             sed -i 's/firmware-ipw2x00//g' config/package-lists/* || true
             sed -i 's/firmware-ivtv//g' config/package-lists/* || true
             sed -i 's/b43-fwcutter//g' config/package-lists/* || true
+            sed -i 's/linux-image-amd64//g' config/package-lists/* || true
           fi
-
-          mkdir -p config/package-lists
-          echo "linux-image-amd64 live-boot live-config live-config-systemd debian-archive-keyring" > config/package-lists/kernel.list.chroot
 
       - name: Build ISO Image
         run: |
@@ -96,3 +94,4 @@ jobs:
           name: Kyxgo-OS-ISO
           path: kyxgo-os-live-amd64.iso
           retention-days: 7
+          
