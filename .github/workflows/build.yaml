@@ -20,12 +20,16 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y live-build debootstrap cpio xorriso isolinux syslinux-utils ca-certificates debian-archive-keyring debconf-utils memtest86+
 
-      - name: Hard Reset Caches & Remove Stale References
+      - name: Hard Purge All Cached Directories
         run: |
+          # 1. Force purge live-build cache & stale configs
           sudo lb clean --purge || true
-          sudo rm -rf .build/ cache/ config/archives/* config/bootstrap config/chroot config/common config/binary
+          sudo rm -rf .build/ cache/ config/bootstrap config/chroot config/common config/binary config/archives/*
+          
+          # 2. Delete auto generated bootstrap/cache files if present
+          sudo rm -f config/bootstrap config/binary config/chroot || true
 
-      - name: Master Pre-seed (Auto-Accept All EULAs & Prompts)
+      - name: Pre-seed Debconf & Licenses
         run: |
           echo "firmware-ipw2x00 firmware-ipw2x00/license/accepted boolean true" | sudo debconf-set-selections || true
           echo "firmware-ivtv firmware-ivtv/license/accepted boolean true" | sudo debconf-set-selections || true
@@ -34,13 +38,33 @@ jobs:
           echo "macchanger macchanger/automatically_run boolean false" | sudo debconf-set-selections || true
           echo "ttf-mscorefonts-installer msttcorefonts/accepted-mscorefonts-eula boolean true" | sudo debconf-set-selections || true
 
-      - name: Configure Live-Build
+      - name: Force Configure Live-Build (Fresh Debian Bookworm Base)
         run: |
-          sudo lb config
+          sudo lb config \
+            --apt-recommends false \
+            --apt-indices false \
+            --architectures amd64 \
+            --archive-areas "main contrib non-free non-free-firmware" \
+            --binary-filesystem ext4 \
+            --binary-images iso-hybrid \
+            --checksums sha256 \
+            --clean \
+            --debconf-frontend noninteractive \
+            --distribution bookworm \
+            --firmware-binary true \
+            --firmware-chroot true \
+            --initramfs live-boot \
+            --initsystem systemd \
+            --iso-publisher "kyxgo-live-config" \
+            --iso-volume "kyxgo-live-config-5.0.0" \
+            --linux-packages "linux-image-amd64" \
+            --bootappend-live "boot=live config splash" \
+            --mirror-bootstrap "http://deb.debian.org/debian/" \
+            --mirror-chroot "http://deb.debian.org/debian/" \
+            --mirror-binary "http://deb.debian.org/debian/"
 
-      - name: Smart Cleaner Engine (Sanitize Package Lists)
+      - name: Smart Package Cleaner
         run: |
-          # 1. Clean custom package lists inside repo
           if [ -d "config/package-lists" ]; then
             sudo sed -i 's/#.*//g' config/package-lists/* || true
             sudo sed -i 's/keepassxc-full/keepassxc/g' config/package-lists/* || true
@@ -60,13 +84,6 @@ jobs:
             sudo sed -i 's/gfxboot-theme-.*//g' config/package-lists/* || true
           fi
 
-          # 2. Deep clean generated config files for any rogue boot themes or init systems
-          sudo find config/ -type f -exec sed -i 's/live-config-upstart//g' {} + || true
-          sudo find config/ -type f -exec sed -i 's/live-config-sysvinit//g' {} + || true
-          sudo find config/ -type f -exec sed -i 's/syslinux-themes-.*//g' {} + || true
-          sudo find config/ -type f -exec sed -i 's/gfxboot-theme-.*//g' {} + || true
-
-          # 3. Inject Core Kernel Requirement
           mkdir -p config/package-lists
           echo "linux-image-amd64 live-boot live-config live-config-systemd" > config/package-lists/kernel.list.chroot
 
