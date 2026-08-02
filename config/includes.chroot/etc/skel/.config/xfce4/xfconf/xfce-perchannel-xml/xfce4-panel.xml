@@ -63,5 +63,5 @@
     <property name="plugin-8" type="string" value="places"/>
     <property name="plugin-2" type="string" value="whiskermenu"/>
     <property name="plugin-1" type="string" value="battery"/>
-  </property>1
+  </property>
 </channel>
