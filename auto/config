@@ -1,32 +1,33 @@
 #!/bin/sh
-
-set -e
+# live-build configuration script
+# see 'man lb config'
 
 lb config noauto \
-    --apt-recommends false \
-    --apt-indices false \
-    --architectures amd64 \
-    --archive-areas "main contrib non-free non-free-firmware" \
-    --backports false \
-    --security false \
-    --source false \
-    --binary-images iso-hybrid \
-    --checksums sha256 \
-    --clean \
-    --debconf-frontend noninteractive \
-    --distribution bookworm \
-    --firmware-binary true \
-    --firmware-chroot true \
-    --initramfs live-boot \
-    --initsystem systemd \
-    --bootloader syslinux \
-    --syslinux-theme none \
-    --iso-publisher "kyxgo-live-config" \
-    --iso-volume "kyxgo-live-config-5.0.0" \
-    --keyring-packages "debian-archive-keyring" \
-    --linux-packages "none" \
-    --bootappend-live "boot=live config splash" \
-    --mirror-bootstrap "http://deb.debian.org/debian/" \
-    --mirror-chroot "http://deb.debian.org/debian/" \
-    --mirror-binary "http://deb.debian.org/debian/" \
-    "${@}"
+--apt-recommends false \
+--apt-indices false \
+--architectures amd64 \
+--archive-areas 'main contrib non-free non-free-firmware' \
+--backports true \
+--security true \
+--updates true \
+--source false \
+--binary-filesystem ext4 \
+--binary-images iso-hybrid \
+--checksums sha256 \
+--clean \
+--debconf-frontend noninteractive \
+--debian-installer live \
+--debian-installer-distribution bookworm \
+--debian-installer-gui true \
+--debootstrap-options "--include=apt-transport-https,ca-certificates,openssl" \
+--distribution bookworm \
+--firmware-binary true \
+--firmware-chroot true \
+--initramfs live-boot \
+--iso-publisher kyxgo-live-config \
+--iso-volume kyxgo-live-config-5.0.0 \
+--linux-packages "linux-image linux-headers" \
+--bootappend-live "boot=live config splash" \
+--memtest memtest86+
+
+"${@}"
