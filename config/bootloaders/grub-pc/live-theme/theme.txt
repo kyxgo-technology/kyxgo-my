@@ -1,4 +1,4 @@
-desktop-image: "splash.png"
+desktop-image: "splash.jpg"
 title-color: "#ffffff"
 title-font: "DejaVu Sans Bold 16"
 title-text: "KYXGO OS Boot Menu"
