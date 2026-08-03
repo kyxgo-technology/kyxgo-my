@@ -1,12 +1,12 @@
 [Desktop Entry]
 Version=1.0
-Name=Firefox Web Browser
-Comment=Browse the World Wide Web
+Name=Chromium Web Browser
+Comment=Access the Internet with Chromium
 GenericName=Web Browser
-Exec=firefox %u
+Exec=chromium %U
 Terminal=false
 X-MultipleArgs=false
 Type=Application
-Icon=firefox
+Icon=chromium
 StartupNotify=true
 Categories=Network;WebBrowser;
