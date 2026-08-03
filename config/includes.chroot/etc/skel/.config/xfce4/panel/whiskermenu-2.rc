@@ -1,6 +1,6 @@
-favorites=exo-file-manager.desktop,thunderbird.desktop,firefox.desktop,backintime-qt4.desktop,org.xfce.io.github.quodlibet.QuodLibet.desktop,exo-terminal-emulator.desktop,org.gnome.Packages.desktop
+Favorites=exo-file-manager.desktop,exo-terminal-emulator.desktop,chromium.desktop,mousepad.desktop,xfce4-settings-manager.desktop
 button-title=Applications
-button-icon=distributor-logo-debian
+button-icon=org.xfce.panel.applications
 button-single-row=true
 show-button-title=false
 show-button-icon=true
@@ -41,9 +41,9 @@ command=exo-open --launch TerminalEmulator man %s
 regex=false
 
 [action1]
-name=Web search (Duckduckgo)
+name=Web search (Google)
 pattern=?
-command=exo-open --launch WebBrowser https://duckduckgo.com/?q=%u
+command=exo-open --launch WebBrowser https://www.google.com/search?q=%u
 regex=false
 
 [action2]
@@ -63,4 +63,3 @@ name=Search files
 pattern=/
 command=catfish --start / "%u"
 regex=false
-
