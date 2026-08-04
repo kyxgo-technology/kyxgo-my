@@ -1,4 +1,4 @@
-name: Build Kyxgo OS ISO
+Name: Build Kyxgo OS ISO
 
 on:
   push:
@@ -100,4 +100,13 @@ jobs:
           name: Kyxgo-OS-ISO
           path: kyxgo-os-live-amd64.iso
           retention-days: 7
-          
+
+      - name: Create Release and Upload Direct ISO
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: "v1.0.0-live"
+          name: "Kyxgo OS Official Live Build"
+          body: "Direct downloadable ISO build for Kyxgo OS."
+          files: kyxgo-os-live-amd64.iso
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
