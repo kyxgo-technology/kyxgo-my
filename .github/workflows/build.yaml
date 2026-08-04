@@ -1,4 +1,4 @@
-Name: Build Kyxgo OS ISO
+name: Build Kyxgo OS ISO
 
 on:
   push:
