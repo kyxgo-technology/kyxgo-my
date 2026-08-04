@@ -24,7 +24,7 @@ jobs:
       - name: Install All Complete Dependencies
         run: |
           apt-get update
-          apt-get install -y live-build debootstrap cpio xorriso isolinux syslinux-utils ca-certificates debian-archive-keyring debconf-utils memtest86+ git squashfs-tools grub-pc-bin grub-efi-amd64-bin mtools
+          apt-get install -y live-build debootstrap cpio xorriso isolinux syslinux-utils ca-certificates debian-archive-keyring debconf-utils memtest86+ git squashfs-tools grub-pc-bin grub-efi-amd64-bin mtools mktorrent gh
 
       - name: Configure Live-Build inside Debian Trixie Container
         run: |
@@ -87,12 +87,16 @@ jobs:
         run: |
           lb build
 
-      - name: Rename ISO to Kyxgo Branding
+      - name: Rename ISO & Create Torrent File
         run: |
           ISO_FILE=$(ls *.iso *.hybrid.iso 2>/devnull | head -n 1)
           if [ -f "$ISO_FILE" ]; then
             mv "$ISO_FILE" kyxgo-os-live-amd64.iso
             echo "ISO renamed successfully to kyxgo-os-live-amd64.iso"
+            
+            # Create Torrent File
+            mktorrent -a "udp://tracker.opentrackr.org:1337/announce,udp://tracker.openbittorrent.com:80/announce" -o kyxgo-os-live-amd64.iso.torrent kyxgo-os-live-amd64.iso || true
+            echo "Torrent file generated successfully."
           else
             echo "Error: ISO build failed or file not found!" && exit 1
           fi
@@ -101,15 +105,17 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: Kyxgo-OS-ISO
-          path: kyxgo-os-live-amd64.iso
+          path: |
+            kyxgo-os-live-amd64.iso
+            kyxgo-os-live-amd64.iso.torrent
           retention-days: 7
 
-      - name: Create Release and Upload Direct ISO
-        uses: softprops/action-gh-release@v1
-        with:
-          tag_name: "v1.0.1-live"
-          name: "Kyxgo OS Official Live Build v1.0.1"
-          body: "Direct downloadable ISO build for Kyxgo OS."
-          files: kyxgo-os-live-amd64.iso
+      - name: Create Release via GitHub CLI (Bypasses 2GB Limit)
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release create "v1.0.2-live" \
+            kyxgo-os-live-amd64.iso \
+            kyxgo-os-live-amd64.iso.torrent \
+            --title "Kyxgo OS Official Live Build v1.0.2" \
+            --notes "Direct ISO download and Torrent file for Kyxgo OS Live Build." || true
