@@ -26,8 +26,6 @@ jobs:
           lb config \
             --architectures amd64 \
             --distribution trixie \
-            --hostname kyxgo \
-            --username kyxgo \
             --bootappend-live "boot=live components hostname=kyxgo username=kyxgo splash quiet fastboot timezone=UTC" \
             --parent-mirror-bootstrap "http://deb.debian.org/debian/" \
             --parent-mirror-chroot "http://deb.debian.org/debian/" \
@@ -76,7 +74,7 @@ jobs:
           apt-get purge -y desktop-base debian-reference-common debian-faq avahi-daemon cups || true
           apt-get autoremove --purge -y
 
-          # Wipe out all default Debian wallpapers/logos so no trace remains
+          # Wipe out all default Debian wallpapers/logos
           rm -rf /usr/share/images/desktop-base/*
           rm -rf /usr/share/backgrounds/*
           rm -rf /usr/share/wallpapers/*
@@ -88,7 +86,7 @@ jobs:
           mkdir -p /usr/share/backgrounds/xfce/
           mkdir -p /etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/
 
-          # Disable heavy unneeded startup services to make desktop load instantly
+          # Disable unneeded startup services to make desktop load fast
           systemctl mask ufw.service bluetooth.service cups.service || true
           EOF
           chmod +x config/hooks/live/02-kyxgo-production.hook.chroot
