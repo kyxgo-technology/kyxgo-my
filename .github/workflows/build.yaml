@@ -1,121 +1,120 @@
-name: Build Kyxgo OS ISO
+name: Build Kyxgo OS Clean Live ISO
 
 on:
+  workflow_dispatch:
   push:
     branches:
-      - master
       - main
-  workflow_dispatch:
-
-permissions:
-  contents: write
+      - master
 
 jobs:
   build-iso:
     runs-on: ubuntu-latest
-    container:
-      image: debian:trixie
-      options: --privileged
 
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install All Complete Dependencies
+      - name: Install Build Dependencies
         run: |
-          apt-get update
-          apt-get install -y live-build debootstrap cpio xorriso isolinux syslinux-utils ca-certificates debian-archive-keyring debconf-utils memtest86+ git squashfs-tools grub-pc-bin grub-efi-amd64-bin mtools mktorrent gh
+          sudo apt-get update
+          sudo apt-get install -y live-build debootstrap isolinux syslinux-utils xorriso squashfs-tools
 
-      - name: Configure Live-Build inside Debian Trixie Container
+      - name: Configure Live-Build Environment
         run: |
-          lb clean --purge || true
-          rm -rf .build/ cache/ config/bootstrap config/chroot config/common config/binary
-
+          mkdir -p build && cd build
           lb config \
-            --apt-recommends false \
-            --apt-indices false \
             --architectures amd64 \
-            --archive-areas "main contrib non-free non-free-firmware" \
-            --binary-filesystem ext4 \
-            --binary-images iso-hybrid \
-            --checksums sha256 \
-            --clean \
-            --debconf-frontend noninteractive \
             --distribution trixie \
-            --security true \
-            --firmware-binary true \
-            --firmware-chroot true \
-            --initramfs live-boot \
-            --initsystem systemd \
-            --iso-publisher "kyxgo-live-config" \
-            --iso-volume "kyxgo-live-config-5.0.0" \
-            --keyring-packages "debian-archive-keyring" \
-            --linux-packages "linux-image" \
-            --bootappend-live "boot=live config splash" \
-            --mirror-bootstrap "http://deb.debian.org/debian" \
-            --mirror-chroot "http://deb.debian.org/debian" \
-            --mirror-binary "http://deb.debian.org/debian" \
-            --mirror-chroot-security "http://deb.debian.org/debian-security" \
-            --mirror-binary-security "http://deb.debian.org/debian-security"
+            --archive-areas "main contrib non-free non-free-firmware" \
+            --binary-images iso-hybrid \
+            --bootloader grub-live \
+            --debian-installer false
 
-      - name: Clean Package Lists & Neutralize Failing Hooks
+      - name: Inject Custom Kyxgo Packages
         run: |
-          if [ -d "config/package-lists" ]; then
-            sed -i 's/#.*//g' config/package-lists/* || true
-            sed -i 's/ubuntu-keyring//g' config/package-lists/* || true
-            sed -i 's/keepassxc-full/keepassxc/g' config/package-lists/* || true
-            sed -i 's/network-manager-applet/network-manager-gnome/g' config/package-lists/* || true
-            sed -i 's/gnome-software-plugin-deb//g' config/package-lists/* || true
-            sed -i 's/gnome-software-plugin-fwupd//g' config/package-lists/* || true
-            sed -i 's/libblockdev-crypto3//g' config/package-lists/* || true
-            sed -i 's/pinta//g' config/package-lists/* || true
-            sed -i 's/libguestfs-rescue//g' config/package-lists/* || true
-            sed -i 's/libguestfs-tools//g' config/package-lists/* || true
-            sed -i 's/firmware-ipw2x00//g' config/package-lists/* || true
-            sed -i 's/firmware-ivtv//g' config/package-lists/* || true
-            sed -i 's/b43-fwcutter//g' config/package-lists/* || true
-            sed -i 's/linux-image-amd64//g' config/package-lists/* || true
+          cd build
+          mkdir -p config/package-lists
+          echo "xfce4 xfce4-goodies lightdm network-manager network-manager-gnome curl wget git sudo python3 google-chrome-stable" > config/package-lists/kyxgo.list.chroot
+
+      - name: Inject Chrome & Deep Clean Hooks (Debian Purge)
+        run: |
+          cd build
+          mkdir -p config/hooks/live
+
+          # 1. Google Chrome Installation Hook
+          cat << 'EOF' > config/hooks/live/01-install-chrome.hook.chroot
+          #!/bin/sh
+          wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
+          echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
+          apt-get update
+          apt-get install -y google-chrome-stable
+          EOF
+          chmod +x config/hooks/live/01-install-chrome.hook.chroot
+
+          # 2. Complete Debian Branding Purge Hook
+          cat << 'EOF' > config/hooks/live/02-kyxgo-branding-purge.hook.chroot
+          #!/bin/sh
+          # Debian base packages ko system se bilkul uda do
+          apt-get purge -y desktop-base debian-reference-common debian-faq || true
+          apt-get autoremove --purge -y
+
+          # Default wallpaper directories ko poora saaf/blank kar do
+          rm -rf /usr/share/images/desktop-base/*
+          rm -rf /usr/share/backgrounds/*
+          rm -rf /usr/share/wallpapers/*
+          rm -rf /usr/share/pixmaps/debian*
+
+          # Kyxgo asset folders banao
+          mkdir -p /usr/share/backgrounds/kyxgo/
+          mkdir -p /usr/share/images/desktop-base/
+          mkdir -p /usr/share/backgrounds/xfce/
+
+          # User Profile Config Setup
+          mkdir -p /etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/
+          EOF
+          chmod +x config/hooks/live/02-kyxgo-branding-purge.hook.chroot
+
+      - name: Copy Kyxgo Wallpaper Assets
+        run: |
+          cd build
+          mkdir -p config/includes.chroot/usr/share/backgrounds/kyxgo/
+          
+          # Checks for wallpaper file in repo root or assets folder
+          if [ -f ../assets/kyxgo-wallpaper.png ]; then
+            cp ../assets/kyxgo-wallpaper.png config/includes.chroot/usr/share/backgrounds/kyxgo/wallpaper.png
+          elif [ -f ../wallpaper.png ]; then
+            cp ../wallpaper.png config/includes.chroot/usr/share/backgrounds/kyxgo/wallpaper.png
           fi
 
-          # Neutralize failing rm scripts in binary hooks
-          if [ -d "config/hooks" ]; then
-            find config/hooks -type f -name "*.binary" -exec sed -i 's/rm /rm -f /g' {} + || true
-            find config/hooks -type f -name "*.binary" -exec bash -c 'echo " || true" >> "$1"' _ {} \; || true
-          fi
-
-      - name: Build ISO Image
+      - name: Post-Copy Force Symlinks Hook
         run: |
-          lb build
-
-      - name: Rename ISO & Create Torrent File
-        run: |
-          ISO_FILE=$(ls *.iso *.hybrid.iso 2>/devnull | head -n 1)
-          if [ -f "$ISO_FILE" ]; then
-            mv "$ISO_FILE" kyxgo-os-live-amd64.iso
-            echo "ISO renamed successfully to kyxgo-os-live-amd64.iso"
-            
-            # Create Torrent File
-            mktorrent -a "udp://tracker.opentrackr.org:1337/announce,udp://tracker.openbittorrent.com:80/announce" -o kyxgo-os-live-amd64.iso.torrent kyxgo-os-live-amd64.iso || true
-            echo "Torrent file generated successfully."
-          else
-            echo "Error: ISO build failed or file not found!" && exit 1
+          cd build
+          cat << 'EOF' > config/hooks/live/03-force-symlinks.hook.chroot
+          #!/bin/sh
+          # System jahan se bhi wallpaper dhundega, wahin Kyxgo ka wallpaper redirect ho jayega
+          if [ -f /usr/share/backgrounds/kyxgo/wallpaper.png ]; then
+              ln -sf /usr/share/backgrounds/kyxgo/wallpaper.png /usr/share/images/desktop-base/default.png
+              ln -sf /usr/share/backgrounds/kyxgo/wallpaper.png /usr/share/images/desktop-base/desktop-background
+              ln -sf /usr/share/backgrounds/kyxgo/wallpaper.png /usr/share/images/desktop-base/login-background.svg
+              ln -sf /usr/share/backgrounds/kyxgo/wallpaper.png /usr/share/backgrounds/xfce/xfce-stripes.png
           fi
+          EOF
+          chmod +x config/hooks/live/03-force-symlinks.hook.chroot
+
+      - name: Build Kyxgo ISO Image
+        run: |
+          cd build
+          sudo lb build
+
+      - name: Organize Output Artifact
+        run: |
+          mkdir -p dist
+          mv build/*.iso dist/kyxgo-os-live-amd64.iso
 
       - name: Upload ISO Artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Kyxgo-OS-ISO
-          path: |
-            kyxgo-os-live-amd64.iso
-            kyxgo-os-live-amd64.iso.torrent
+          name: Kyxgo-OS-Live-ISO
+          path: dist/kyxgo-os-live-amd64.iso
           retention-days: 7
-
-      - name: Create Release via GitHub CLI (Bypasses 2GB Limit)
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          gh release create "v1.0.2-live" \
-            kyxgo-os-live-amd64.iso \
-            kyxgo-os-live-amd64.iso.torrent \
-            --title "Kyxgo OS Official Live Build v1.0.2" \
-            --notes "Direct ISO download and Torrent file for Kyxgo OS Live Build." || true
