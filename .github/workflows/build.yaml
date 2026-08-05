@@ -42,11 +42,11 @@ jobs:
             --bootloader grub-live \
             --debian-installer false
 
-      - name: Inject Custom Kyxgo Packages & Fast Boot Services
+      - name: Inject Custom Kyxgo Packages
         run: |
           cd build
           mkdir -p config/package-lists
-          echo "xfce4 xfce4-goodies lightdm network-manager network-manager-gnome curl wget git sudo python3 google-chrome-stable" > config/package-lists/kyxgo.list.chroot
+          echo "linux-image-amd64 live-boot live-config xfce4 xfce4-goodies lightdm network-manager network-manager-gnome curl wget git sudo python3" > config/package-lists/kyxgo.list.chroot
 
       - name: Inject Chrome, Deep Clean & Fast Boot Optimization Hook
         run: |
@@ -56,8 +56,9 @@ jobs:
           # 1. Google Chrome Installation Hook
           cat << 'EOF' > config/hooks/live/01-install-chrome.hook.chroot
           #!/bin/sh
-          wget -q -O - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add -
-          echo "deb [arch=amd64] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
+          mkdir -p /etc/apt/keyrings
+          wget -qO- https://dl-ssl.google.com/linux/linux_signing_key.pub | gpg --dearmor -o /etc/apt/keyrings/google-chrome.gpg
+          echo "deb [arch=amd64 signed-by=/etc/apt/keyrings/google-chrome.gpg] http://dl.google.com/linux/chrome/deb/ stable main" > /etc/apt/sources.list.d/google-chrome.list
           apt-get update
           apt-get install -y google-chrome-stable
           EOF
@@ -91,14 +92,20 @@ jobs:
           EOF
           chmod +x config/hooks/live/02-kyxgo-production.hook.chroot
 
-      - name: Copy Kyxgo Wallpaper Assets
+      - name: Copy Kyxgo Assets (Splash & Wallpaper Support)
         run: |
           cd build
           mkdir -p config/includes.chroot/usr/share/backgrounds/kyxgo/
           
-          # Check and copy user's wallpaper into squashfs tree
-          if [ -f ../assets/kyxgo-wallpaper.png ]; then
-            cp ../assets/kyxgo-wallpaper.png config/includes.chroot/usr/share/backgrounds/kyxgo/wallpaper.png
+          # Flexible check for splash.png, splash.jpg, wallpaper.png, etc.
+          if [ -f ../splash.png ]; then
+            cp ../splash.png config/includes.chroot/usr/share/backgrounds/kyxgo/wallpaper.png
+          elif [ -f ../splash.jpg ]; then
+            cp ../splash.jpg config/includes.chroot/usr/share/backgrounds/kyxgo/wallpaper.png
+          elif [ -f ../assets/splash.png ]; then
+            cp ../assets/splash.png config/includes.chroot/usr/share/backgrounds/kyxgo/wallpaper.png
+          elif [ -f ../assets/splash.jpg ]; then
+            cp ../assets/splash.jpg config/includes.chroot/usr/share/backgrounds/kyxgo/wallpaper.png
           elif [ -f ../wallpaper.png ]; then
             cp ../wallpaper.png config/includes.chroot/usr/share/backgrounds/kyxgo/wallpaper.png
           fi
