@@ -15,8 +15,9 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
 
-      - name: Install Build Dependencies
+      - name: Clean Previous Builds & Installs
         run: |
+          sudo rm -rf build
           sudo apt-get update
           sudo apt-get install -y live-build debootstrap isolinux syslinux-utils xorriso squashfs-tools debian-archive-keyring
 
@@ -42,9 +43,10 @@ jobs:
             --bootloader grub-live \
             --debian-installer false
 
-      - name: Inject Custom Kyxgo Packages
+      - name: Inject Pure Debian Package List
         run: |
           cd build
+          rm -rf config/package-lists/*
           mkdir -p config/package-lists
           echo "linux-image-amd64 live-boot live-config xfce4 xfce4-goodies lightdm network-manager network-manager-gnome curl wget git sudo python3" > config/package-lists/kyxgo.list.chroot
 
@@ -64,10 +66,10 @@ jobs:
           EOF
           chmod +x config/hooks/live/01-install-chrome.hook.chroot
 
-          # 2. Complete Debian Branding Purge, Hostname & Fast-Boot Speedup Hook
+          # 2. Complete Debian Branding Purge, Hostname & Speedup Hook
           cat << 'EOF' > config/hooks/live/02-kyxgo-production.hook.chroot
           #!/bin/sh
-          # Set Hostname System Wide to Kyxgo
+          # Set Hostname System Wide
           echo "kyxgo" > /etc/hostname
           echo "127.0.0.1 kyxgo localhost" > /etc/hosts
 
@@ -87,7 +89,7 @@ jobs:
           mkdir -p /usr/share/backgrounds/xfce/
           mkdir -p /etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/
 
-          # Disable unneeded startup services to make desktop load fast
+          # Disable unneeded services
           systemctl mask ufw.service bluetooth.service cups.service || true
           EOF
           chmod +x config/hooks/live/02-kyxgo-production.hook.chroot
@@ -97,7 +99,6 @@ jobs:
           cd build
           mkdir -p config/includes.chroot/usr/share/backgrounds/kyxgo/
           
-          # Flexible check for splash.png, splash.jpg, wallpaper.png, etc.
           if [ -f ../splash.png ]; then
             cp ../splash.png config/includes.chroot/usr/share/backgrounds/kyxgo/wallpaper.png
           elif [ -f ../splash.jpg ]; then
@@ -115,7 +116,6 @@ jobs:
           cd build
           cat << 'EOF' > config/hooks/live/03-force-symlinks.hook.chroot
           #!/bin/sh
-          # Forcefully link all desktop and login backgrounds to Kyxgo wallpaper
           if [ -f /usr/share/backgrounds/kyxgo/wallpaper.png ]; then
               ln -sf /usr/share/backgrounds/kyxgo/wallpaper.png /usr/share/images/desktop-base/default.png
               ln -sf /usr/share/backgrounds/kyxgo/wallpaper.png /usr/share/images/desktop-base/desktop-background
