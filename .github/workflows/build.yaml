@@ -1,4 +1,4 @@
-name: Build Kyxgo OS Clean Live ISO
+name: Build Kyxgo OS Production Live ISO
 
 on:
   workflow_dispatch:
@@ -26,24 +26,31 @@ jobs:
           lb config \
             --architectures amd64 \
             --distribution trixie \
+            --hostname kyxgo \
+            --username kyxgo \
+            --bootappend-live "boot=live components hostname=kyxgo username=kyxgo splash quiet fastboot timezone=UTC" \
             --parent-mirror-bootstrap "http://deb.debian.org/debian/" \
             --parent-mirror-chroot "http://deb.debian.org/debian/" \
             --parent-mirror-binary "http://deb.debian.org/debian/" \
             --mirror-bootstrap "http://deb.debian.org/debian/" \
             --mirror-chroot "http://deb.debian.org/debian/" \
             --mirror-binary "http://deb.debian.org/debian/" \
+            --parent-mirror-chroot-security "http://security.debian.org/debian-security" \
+            --parent-mirror-binary-security "http://security.debian.org/debian-security" \
+            --mirror-chroot-security "http://security.debian.org/debian-security" \
+            --mirror-binary-security "http://security.debian.org/debian-security" \
             --archive-areas "main contrib non-free non-free-firmware" \
             --binary-images iso-hybrid \
             --bootloader grub-live \
             --debian-installer false
 
-      - name: Inject Custom Kyxgo Packages
+      - name: Inject Custom Kyxgo Packages & Fast Boot Services
         run: |
           cd build
           mkdir -p config/package-lists
           echo "xfce4 xfce4-goodies lightdm network-manager network-manager-gnome curl wget git sudo python3 google-chrome-stable" > config/package-lists/kyxgo.list.chroot
 
-      - name: Inject Chrome & Deep Clean Hooks (Debian Purge)
+      - name: Inject Chrome, Deep Clean & Fast Boot Optimization Hook
         run: |
           cd build
           mkdir -p config/hooks/live
@@ -58,47 +65,52 @@ jobs:
           EOF
           chmod +x config/hooks/live/01-install-chrome.hook.chroot
 
-          # 2. Complete Debian Branding Purge Hook
-          cat << 'EOF' > config/hooks/live/02-kyxgo-branding-purge.hook.chroot
+          # 2. Complete Debian Branding Purge, Hostname & Fast-Boot Speedup Hook
+          cat << 'EOF' > config/hooks/live/02-kyxgo-production.hook.chroot
           #!/bin/sh
-          # Debian base packages ko system se bilkul uda do
-          apt-get purge -y desktop-base debian-reference-common debian-faq || true
+          # Set Hostname System Wide to Kyxgo
+          echo "kyxgo" > /etc/hostname
+          echo "127.0.0.1 kyxgo localhost" > /etc/hosts
+
+          # Completely Purge Debian Default Branding Packages
+          apt-get purge -y desktop-base debian-reference-common debian-faq avahi-daemon cups || true
           apt-get autoremove --purge -y
 
-          # Default wallpaper directories ko poora saaf/blank kar do
+          # Wipe out all default Debian wallpapers/logos so no trace remains
           rm -rf /usr/share/images/desktop-base/*
           rm -rf /usr/share/backgrounds/*
           rm -rf /usr/share/wallpapers/*
           rm -rf /usr/share/pixmaps/debian*
 
-          # Kyxgo asset folders banao
+          # Create Kyxgo Asset Directories
           mkdir -p /usr/share/backgrounds/kyxgo/
           mkdir -p /usr/share/images/desktop-base/
           mkdir -p /usr/share/backgrounds/xfce/
-
-          # User Profile Config Setup
           mkdir -p /etc/skel/.config/xfce4/xfconf/xfce-perchannel-xml/
+
+          # Disable heavy unneeded startup services to make desktop load instantly
+          systemctl mask ufw.service bluetooth.service cups.service || true
           EOF
-          chmod +x config/hooks/live/02-kyxgo-branding-purge.hook.chroot
+          chmod +x config/hooks/live/02-kyxgo-production.hook.chroot
 
       - name: Copy Kyxgo Wallpaper Assets
         run: |
           cd build
           mkdir -p config/includes.chroot/usr/share/backgrounds/kyxgo/
           
-          # Checks for wallpaper file in repo root or assets folder
+          # Check and copy user's wallpaper into squashfs tree
           if [ -f ../assets/kyxgo-wallpaper.png ]; then
             cp ../assets/kyxgo-wallpaper.png config/includes.chroot/usr/share/backgrounds/kyxgo/wallpaper.png
           elif [ -f ../wallpaper.png ]; then
             cp ../wallpaper.png config/includes.chroot/usr/share/backgrounds/kyxgo/wallpaper.png
           fi
 
-      - name: Post-Copy Force Symlinks Hook
+      - name: Post-Copy Force Symlinks Hook (Branding Lock)
         run: |
           cd build
           cat << 'EOF' > config/hooks/live/03-force-symlinks.hook.chroot
           #!/bin/sh
-          # System jahan se bhi wallpaper dhundega, wahin Kyxgo ka wallpaper redirect ho jayega
+          # Forcefully link all desktop and login backgrounds to Kyxgo wallpaper
           if [ -f /usr/share/backgrounds/kyxgo/wallpaper.png ]; then
               ln -sf /usr/share/backgrounds/kyxgo/wallpaper.png /usr/share/images/desktop-base/default.png
               ln -sf /usr/share/backgrounds/kyxgo/wallpaper.png /usr/share/images/desktop-base/desktop-background
