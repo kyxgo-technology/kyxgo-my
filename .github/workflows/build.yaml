@@ -27,6 +27,8 @@ jobs:
           lb config \
             --architectures amd64 \
             --distribution trixie \
+            --linux-flavours amd64 \
+            --linux-packages "linux-image" \
             --bootappend-live "boot=live components hostname=kyxgo username=kyxgo splash quiet fastboot timezone=UTC" \
             --parent-mirror-bootstrap "http://deb.debian.org/debian/" \
             --parent-mirror-chroot "http://deb.debian.org/debian/" \
@@ -48,7 +50,7 @@ jobs:
           cd build
           rm -rf config/package-lists/*
           mkdir -p config/package-lists
-          echo "linux-image-amd64 live-boot live-config xfce4 xfce4-goodies lightdm network-manager network-manager-gnome curl wget git sudo python3" > config/package-lists/kyxgo.list.chroot
+          echo "live-boot live-config xfce4 xfce4-goodies lightdm network-manager network-manager-gnome curl wget git sudo python3" > config/package-lists/kyxgo.list.chroot
 
       - name: Inject Chrome, Deep Clean & Fast Boot Optimization Hook
         run: |
